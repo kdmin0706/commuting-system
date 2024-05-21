@@ -132,4 +132,21 @@ class MemberControllerTest {
     ;
   }
 
+  @Test
+  @DisplayName("출근한 직원은 퇴근을 할 수 있다.")
+  void endWorking() throws Exception {
+    // given
+    long memberId = 1L;
+    doNothing().when(memberService).endWorking(memberId);
+
+    // when // then
+    mockMvc.perform(
+            get("/api/v1/member/working/end")
+                .param("memberId", Long.toString(memberId))
+        )
+        .andDo(print())
+        .andExpect(status().isOk())
+    ;
+  }
+
 }

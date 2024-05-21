@@ -7,6 +7,7 @@ import static sample.commutingsystem.domain.member.MemberRole.MANAGER;
 import static sample.commutingsystem.domain.member.MemberRole.MEMBER;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -164,6 +165,39 @@ class MemberServiceTest {
     assertThatThrownBy(() -> memberService.startWorking(memberId))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("존재하지 않는 멤버입니다.");
+  }
+
+  @Test
+  @DisplayName("출근한 직원은 퇴근을 할 수 있다.")
+  void endWorking() {
+    // given
+    Member member = createMember("member1", null);
+    memberRepository.save(member);
+
+    Attendance attendance = Attendance.builder()
+        .member(member)
+        .startTime(LocalDateTime.of(2024, 1, 1, 0, 0))
+        .build();
+    attendanceRepository.save(attendance);
+
+    // when
+    memberService.endWorking(member.getId());
+
+    // then
+    List<Attendance> attendances = attendanceRepository.findAll();
+    assertThat(attendances).hasSize(1);
+  }
+
+  @Test
+  @DisplayName("출근한 기록이 없는 직원은 퇴근을 할 수 없다.")
+  void endWorkingWithOutAttendance() {
+    // given
+    long memberId = 1L;
+
+    // when // then
+    assertThatThrownBy(() -> memberService.endWorking(memberId))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("출근한 기록이 없습니다.");
   }
 
 
