@@ -52,4 +52,8 @@ public class Member {
     this.team = team;
   }
 
+  public boolean isManager() {
+    return this.memberRole.equals(MemberRole.MANAGER);
+  }
+
 }
