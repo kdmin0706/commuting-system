@@ -64,4 +64,12 @@ public class MemberService {
     attendanceRepository.save(attendance);
   }
 
+  @Transactional
+  public void endWorking(Long memberId) {
+    Attendance attendance = attendanceRepository.findFirstByMemberIdOrderByStartTimeDesc(memberId)
+        .orElseThrow(() -> new IllegalArgumentException("출근한 기록이 없습니다."));
+
+    attendance.updateEndTime(LocalDateTime.now());
+  }
+
 }

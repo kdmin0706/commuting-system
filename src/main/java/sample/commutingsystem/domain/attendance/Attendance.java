@@ -38,5 +38,8 @@ public class Attendance {
     this.endTime = endTime;
   }
 
+  public void updateEndTime(LocalDateTime endTime) {
+    this.endTime = endTime;
+  }
 
 }

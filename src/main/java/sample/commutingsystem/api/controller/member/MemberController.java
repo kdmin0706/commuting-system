@@ -33,4 +33,9 @@ public class MemberController {
     memberService.startWorking(memberId);
   }
 
+  @GetMapping("/api/v1/member/working/end")
+  public void endWorking(@RequestParam Long memberId) {
+    memberService.endWorking(memberId);
+  }
+
 }
