@@ -1,11 +1,14 @@
 package sample.commutingsystem.api.service.member;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sample.commutingsystem.api.controller.member.request.MemberCreateRequest;
 import sample.commutingsystem.api.service.member.response.MemberResponse;
+import sample.commutingsystem.domain.attendance.Attendance;
+import sample.commutingsystem.domain.attendance.AttendanceRepository;
 import sample.commutingsystem.domain.member.Member;
 import sample.commutingsystem.domain.member.MemberRepository;
 import sample.commutingsystem.domain.team.Team;
@@ -18,6 +21,7 @@ public class MemberService {
 
   private final MemberRepository memberRepository;
   private final TeamRepository teamRepository;
+  private final AttendanceRepository attendanceRepository;
 
   @Transactional
   public void createMember(MemberCreateRequest request) {
@@ -45,6 +49,19 @@ public class MemberService {
     return members.stream()
         .map(MemberResponse::of)
         .toList();
+  }
+
+  @Transactional
+  public void startWorking(Long memberId) {
+    Member member = memberRepository.findById(memberId)
+        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 멤버입니다."));
+
+    Attendance attendance = Attendance.builder()
+        .member(member)
+        .startTime(LocalDateTime.now())
+        .build();
+
+    attendanceRepository.save(attendance);
   }
 
 }
