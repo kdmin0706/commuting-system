@@ -16,6 +16,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import sample.commutingsystem.api.controller.member.request.MemberCreateRequest;
 import sample.commutingsystem.api.service.member.response.MemberResponse;
+import sample.commutingsystem.domain.attendance.Attendance;
+import sample.commutingsystem.domain.attendance.AttendanceRepository;
 import sample.commutingsystem.domain.member.Member;
 import sample.commutingsystem.domain.member.MemberRepository;
 import sample.commutingsystem.domain.team.Team;
@@ -34,8 +36,12 @@ class MemberServiceTest {
   @Autowired
   private TeamRepository teamRepository;
 
+  @Autowired
+  private AttendanceRepository attendanceRepository;
+
   @AfterEach
   void tearDown() {
+    attendanceRepository.deleteAllInBatch();
     memberRepository.deleteAllInBatch();
     teamRepository.deleteAllInBatch();
   }
@@ -132,6 +138,34 @@ class MemberServiceTest {
             tuple("member2", MEMBER, "team2")
         );
   }
+
+  @Test
+  @DisplayName("등록된 직원은 출근할 수 있다.")
+  void startWorking() {
+    // given
+    Member member = createMember("member1", null);
+    memberRepository.save(member);
+
+    // when
+    memberService.startWorking(member.getId());
+
+    // then
+    List<Attendance> attendances = attendanceRepository.findAll();
+    assertThat(attendances).hasSize(1);
+  }
+
+  @Test
+  @DisplayName("등록되지 않은 직원은 출근할 수 없다.")
+  void startWorkingWhenIsNotRegister() {
+    // given
+    long memberId = 1L;
+
+    // when // then
+    assertThatThrownBy(() -> memberService.startWorking(memberId))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("존재하지 않는 멤버입니다.");
+  }
+
 
   private Member createMember(String name, Team team) {
     return Member.builder()

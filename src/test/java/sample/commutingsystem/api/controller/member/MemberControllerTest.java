@@ -1,6 +1,7 @@
 package sample.commutingsystem.api.controller.member;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -109,6 +110,23 @@ class MemberControllerTest {
     mockMvc.perform(
             get("/api/v1/member")
         )
+        .andDo(print())
+        .andExpect(status().isOk())
+    ;
+  }
+
+  @Test
+  @DisplayName("등록된 직원은 출근할 수 있다.")
+  void startWorking() throws Exception {
+    // given
+    long memberId = 1L;
+    doNothing().when(memberService).startWorking(memberId);
+
+    // when // then
+    mockMvc.perform(
+        get("/api/v1/member/working/start")
+            .param("memberId", Long.toString(memberId))
+    )
         .andDo(print())
         .andExpect(status().isOk())
     ;
