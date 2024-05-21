@@ -1,0 +1,15 @@
+### 멤버 조회
+GET http://localhost:8080/api/v1/member
+Accept: application/json
+
+### 멤버 생성
+POST http://localhost:8080/api/v1/member
+Content-Type: application/json
+
+{
+  "name": "member",
+  "teamName": "team1",
+  "memberRole": "MANAGER",
+  "workStartDate": "2024-05-22",
+  "birthday": "2024-01-01"
+}
