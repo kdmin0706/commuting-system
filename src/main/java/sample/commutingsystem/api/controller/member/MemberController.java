@@ -1,14 +1,17 @@
 package sample.commutingsystem.api.controller.member;
 
 import jakarta.validation.Valid;
+import java.time.YearMonth;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import sample.commutingsystem.api.controller.member.request.MemberCreateRequest;
+import sample.commutingsystem.api.service.attendance.response.MemberAttendanceResponse;
 import sample.commutingsystem.api.service.member.MemberService;
 import sample.commutingsystem.api.service.member.response.MemberResponse;
 
@@ -36,6 +39,12 @@ public class MemberController {
   @GetMapping("/api/v1/member/working/end")
   public void endWorking(@RequestParam Long memberId) {
     memberService.endWorking(memberId);
+  }
+
+  @GetMapping("/api/v1/member/{memberId}/attendance/{yearMonth}")
+  public MemberAttendanceResponse getMemberAttendance(
+      @PathVariable Long memberId, @PathVariable YearMonth yearMonth) {
+    return memberService.getMemberAttendance(memberId, yearMonth);
   }
 
 }

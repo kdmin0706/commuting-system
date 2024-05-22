@@ -1,14 +1,20 @@
 package sample.commutingsystem.api.service.member;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sample.commutingsystem.api.controller.member.request.MemberCreateRequest;
+import sample.commutingsystem.api.service.attendance.response.AttendanceDetail;
+import sample.commutingsystem.api.service.attendance.response.MemberAttendanceResponse;
 import sample.commutingsystem.api.service.member.response.MemberResponse;
 import sample.commutingsystem.domain.attendance.Attendance;
 import sample.commutingsystem.domain.attendance.AttendanceRepository;
@@ -90,6 +96,42 @@ public class MemberService {
         .orElseThrow(() -> new IllegalArgumentException("출근한 기록이 없습니다."));
 
     attendance.updateEndTime(LocalDateTime.now());
+  }
+
+  public MemberAttendanceResponse getMemberAttendance(Long memberId, YearMonth yearMonth) {
+    LocalDate startOfMonth = yearMonth.atDay(1);
+    LocalDate endOfMonth = yearMonth.atEndOfMonth();
+
+    List<Attendance> attendances = attendanceRepository.findAllByMemberIdAndStartTimeBetween(
+        memberId, startOfMonth.atStartOfDay(), endOfMonth.atStartOfDay());
+
+    Map<LocalDate, Integer> attendanceMap = new HashMap<>();
+
+    for (Attendance attendance : attendances) {
+      if (attendance.getEndTime() != null) {
+        LocalDate date = attendance.getStartTime().toLocalDate();
+        int workingMinutes = (int) Duration.between(
+            attendance.getStartTime(), attendance.getEndTime()).toMinutes();
+
+        attendanceMap.put(date, attendanceMap.getOrDefault(date, 0) + workingMinutes);
+      }
+    }
+
+    List<AttendanceDetail> details = new ArrayList<>();
+    for (LocalDate date = startOfMonth; !date.isAfter(endOfMonth); date = date.plusDays(1)) {
+      int workingMinutes = attendanceMap.getOrDefault(date, 0);
+
+      details.add(AttendanceDetail.create(date.toString(), workingMinutes));
+    }
+
+    return MemberAttendanceResponse.of(
+        details,
+        details.stream()
+            .map(AttendanceDetail::getWorkingMinutes)
+            .mapToInt(Integer::intValue)
+            .sum()
+    );
+
   }
 
 }
