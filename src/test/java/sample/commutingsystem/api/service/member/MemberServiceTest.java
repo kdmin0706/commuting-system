@@ -19,6 +19,8 @@ import org.springframework.test.context.ActiveProfiles;
 import sample.commutingsystem.api.controller.member.request.MemberCreateRequest;
 import sample.commutingsystem.api.service.attendance.response.MemberAttendanceResponse;
 import sample.commutingsystem.api.service.member.response.MemberResponse;
+import sample.commutingsystem.domain.AnnualLeave.AnnualLeave;
+import sample.commutingsystem.domain.AnnualLeave.AnnualLeaveRepository;
 import sample.commutingsystem.domain.attendance.Attendance;
 import sample.commutingsystem.domain.attendance.AttendanceRepository;
 import sample.commutingsystem.domain.member.Member;
@@ -42,9 +44,13 @@ class MemberServiceTest {
   @Autowired
   private AttendanceRepository attendanceRepository;
 
+  @Autowired
+  private AnnualLeaveRepository annualLeaveRepository;
+
   @AfterEach
   void tearDown() {
     attendanceRepository.deleteAllInBatch();
+    annualLeaveRepository.deleteAllInBatch();
     memberRepository.deleteAllInBatch();
     teamRepository.deleteAllInBatch();
   }
@@ -56,7 +62,7 @@ class MemberServiceTest {
     LocalDate startDate = LocalDate.now();
     String teamName = "Team1";
 
-    teamRepository.save(createTeam(teamName, null));
+    teamRepository.save(createTeam(teamName, null, 5));
 
     MemberCreateRequest request = MemberCreateRequest.builder()
         .name("멤버1")
@@ -101,7 +107,7 @@ class MemberServiceTest {
   void createMemberWhenOnlyOneManager() {
     // given
     String teamName = "team1";
-    Team team = createTeam(teamName, "manager"); // 이 메서드가 팀에 매니저를 올바르게 설정하는지 확인
+    Team team = createTeam(teamName, "manager", 5); // 이 메서드가 팀에 매니저를 올바르게 설정하는지 확인
     teamRepository.save(team);
 
     MemberCreateRequest request = MemberCreateRequest.builder()
@@ -122,8 +128,8 @@ class MemberServiceTest {
   @DisplayName("모든 멤버를 조회한다.")
   void getMembers() {
     // given
-    Team team1 = createTeam("team1", null);
-    Team team2 = createTeam("team2", null);
+    Team team1 = createTeam("team1", null, 5);
+    Team team2 = createTeam("team2", null, 5);
     teamRepository.saveAll(List.of(team1, team2));
 
     Member member1 = createMember("member1", team1);
@@ -267,6 +273,70 @@ class MemberServiceTest {
     assertThat(response.getSum()).isEqualTo(1440);
   }
 
+  @Test
+  @DisplayName("등록된 직원은 연차를 등록할 수 있다.")
+  void requestAnnualLeave() {
+    // given
+    Team team = createTeam("team1", null, 3);
+    teamRepository.save(team);
+
+    Member member = createMember("member1", team);
+    memberRepository.save(member);
+
+    LocalDate leaveDate = LocalDate.now().plusDays(10);
+
+    // when
+    memberService.requestAnnualLeave(member.getId(), leaveDate);
+
+    // then
+    long count = annualLeaveRepository.findAllByMemberId(member.getId())
+        .stream()
+        .filter(annualLeave -> annualLeave.getAnnualDate().equals(leaveDate))
+        .count();
+
+    assertThat(count).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("팀별로 연차 등록 기간이 다르고 기간이 기간 내에만 연차를 등록할 수 있다.")
+  void requestAnnualLeave_LeavePeriodCheck() {
+    // given
+    Team team = createTeam("team1", null, 5);
+    teamRepository.save(team);
+
+    Member member = createMember("member1", team);
+    memberRepository.save(member);
+
+    LocalDate leavesDate = LocalDate.now().plusDays(3);
+
+    // when // then
+    assertThatThrownBy(() -> memberService.requestAnnualLeave(member.getId(), leavesDate))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("연차 등록 기간이 아닙니다.");
+  }
+
+  @Test
+  @DisplayName("이미 사용한 연차로 인해 잔여 연차가 없는 경우 예외를 처리한다.")
+  void requestAnnualLeave_NoRemainingLeaves() {
+    // given
+    Team team = createTeam("team1", null, 1);
+    teamRepository.save(team);
+
+    Member member = createMember("member1", team);
+    memberRepository.save(member);
+
+    int initLeaves = member.getWorkStartDate().getYear() == LocalDate.now().getYear() ? 11 : 15;
+    for (int i = 0; i < initLeaves; i++) {
+      AnnualLeave annualLeave = AnnualLeave.create(member, LocalDate.now().minusDays(i));
+      annualLeaveRepository.save(annualLeave);
+    }
+
+    // when // then
+    assertThatThrownBy(() -> memberService.requestAnnualLeave(member.getId(), LocalDate.now().plusDays(10)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("잔여 연차가 없습니다.");
+  }
+
   private Member createMember(String name, Team team) {
     return Member.builder()
         .name(name)
@@ -277,11 +347,12 @@ class MemberServiceTest {
         .build();
   }
 
-  private Team createTeam(String teamName, String manager) {
+  private Team createTeam(String teamName, String manager, int period) {
     return Team.builder()
         .name(teamName)
         .manager(manager)
         .memberCount(1)
+        .annualLeaveRegisterPeriod(period)
         .build();
   }
 

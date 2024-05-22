@@ -186,4 +186,22 @@ class MemberControllerTest {
     ;
   }
 
+  @Test
+  @DisplayName("등록된 직원은 연차를 등록할 수 있다.")
+  void requestAnnualLeave() throws Exception {
+    // given
+    long memberId = 1L;
+    LocalDate date = LocalDate.now();
+    doNothing().when(memberService).requestAnnualLeave(memberId, date);
+
+    // when // then
+    mockMvc.perform(
+        get("/api/v1/member/AnnualLeaves")
+            .param("memberId", Long.toString(memberId))
+            .param("date", date.toString())
+    )
+        .andDo(print())
+        .andExpect(status().isOk())
+    ;
+  }
 }
