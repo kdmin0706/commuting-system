@@ -102,6 +102,32 @@ public class MemberService {
     LocalDate startOfMonth = yearMonth.atDay(1);
     LocalDate endOfMonth = yearMonth.atEndOfMonth();
 
+    Map<LocalDate, Integer> attendanceMap = createAttendanceMapBy(memberId, startOfMonth, endOfMonth);
+    List<AttendanceDetail> details = getAttendanceDetailsBy(startOfMonth, endOfMonth, attendanceMap);
+
+    return MemberAttendanceResponse.of(
+        details,
+        details.stream()
+            .map(AttendanceDetail::getWorkingMinutes)
+            .mapToInt(Integer::intValue)
+            .sum()
+    );
+
+  }
+
+  private static List<AttendanceDetail> getAttendanceDetailsBy(LocalDate startOfMonth,
+      LocalDate endOfMonth, Map<LocalDate, Integer> attendanceMap) {
+    List<AttendanceDetail> details = new ArrayList<>();
+    for (LocalDate date = startOfMonth; !date.isAfter(endOfMonth); date = date.plusDays(1)) {
+      int workingMinutes = attendanceMap.getOrDefault(date, 0);
+
+      details.add(AttendanceDetail.create(date.toString(), workingMinutes));
+    }
+    return details;
+  }
+
+  private Map<LocalDate, Integer> createAttendanceMapBy(Long memberId, LocalDate startOfMonth,
+      LocalDate endOfMonth) {
     List<Attendance> attendances = attendanceRepository.findAllByMemberIdAndStartTimeBetween(
         memberId, startOfMonth.atStartOfDay(), endOfMonth.atStartOfDay());
 
@@ -116,22 +142,7 @@ public class MemberService {
         attendanceMap.put(date, attendanceMap.getOrDefault(date, 0) + workingMinutes);
       }
     }
-
-    List<AttendanceDetail> details = new ArrayList<>();
-    for (LocalDate date = startOfMonth; !date.isAfter(endOfMonth); date = date.plusDays(1)) {
-      int workingMinutes = attendanceMap.getOrDefault(date, 0);
-
-      details.add(AttendanceDetail.create(date.toString(), workingMinutes));
-    }
-
-    return MemberAttendanceResponse.of(
-        details,
-        details.stream()
-            .map(AttendanceDetail::getWorkingMinutes)
-            .mapToInt(Integer::intValue)
-            .sum()
-    );
-
+    return attendanceMap;
   }
 
 }
