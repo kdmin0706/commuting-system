@@ -8,6 +8,7 @@ import static sample.commutingsystem.domain.member.MemberRole.MEMBER;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import sample.commutingsystem.api.controller.member.request.MemberCreateRequest;
+import sample.commutingsystem.api.service.attendance.response.MemberAttendanceResponse;
 import sample.commutingsystem.api.service.member.response.MemberResponse;
 import sample.commutingsystem.domain.attendance.Attendance;
 import sample.commutingsystem.domain.attendance.AttendanceRepository;
@@ -246,6 +248,24 @@ class MemberServiceTest {
         .hasMessage("출근한 기록이 없습니다.");
   }
 
+  @Test
+  @DisplayName("특정 직원의 날짜별 근무시간 조회한다.")
+  void getMemberAttendance() {
+    // given
+    Member member = createMember("member1", null);
+    memberRepository.save(member);
+
+    Attendance attendance1 = createAttendance(member, LocalDateTime.of(2024, 5, 1, 9, 0));
+    Attendance attendance2 = createAttendance(member, LocalDateTime.of(2024, 5, 2, 9, 0));
+    Attendance attendance3 = createAttendance(member, LocalDateTime.of(2024, 5, 3, 9, 0));
+    attendanceRepository.saveAll(List.of(attendance1, attendance2, attendance3));
+
+    // when
+    MemberAttendanceResponse response = memberService.getMemberAttendance(member.getId(), YearMonth.of(2024, 5));
+
+    // then
+    assertThat(response.getSum()).isEqualTo(1440);
+  }
 
   private Member createMember(String name, Team team) {
     return Member.builder()
@@ -262,6 +282,14 @@ class MemberServiceTest {
         .name(teamName)
         .manager(manager)
         .memberCount(1)
+        .build();
+  }
+
+  private Attendance createAttendance(Member member, LocalDateTime startTime) {
+    return Attendance.builder()
+        .member(member)
+        .startTime(startTime)
+        .endTime(startTime.plusHours(8))
         .build();
   }
 

@@ -2,14 +2,17 @@ package sample.commutingsystem.api.controller.member;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static sample.commutingsystem.domain.member.MemberRole.MEMBER;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,6 +22,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import sample.commutingsystem.api.controller.member.request.MemberCreateRequest;
+import sample.commutingsystem.api.service.attendance.response.AttendanceDetail;
+import sample.commutingsystem.api.service.attendance.response.MemberAttendanceResponse;
 import sample.commutingsystem.api.service.member.MemberService;
 import sample.commutingsystem.api.service.member.response.MemberResponse;
 
@@ -146,6 +151,38 @@ class MemberControllerTest {
         )
         .andDo(print())
         .andExpect(status().isOk())
+    ;
+  }
+
+  @Test
+  @DisplayName("등록된 직원의 일정 기간의 출근 시간을 조회한다.")
+  void getMemberAttendance() throws Exception {
+    // given
+    long memberId = 1L;
+    String yearMonth = "2024-05";
+
+    MemberAttendanceResponse response = MemberAttendanceResponse.builder()
+        .details(List.of(
+                AttendanceDetail.create("2024-05-01", 10),
+                AttendanceDetail.create("2024-05-02", 10),
+                AttendanceDetail.create("2024-05-03", 10)
+            )
+        )
+        .sum(30)
+        .build();
+
+    when(memberService.getMemberAttendance(memberId, YearMonth.parse(yearMonth)))
+        .thenReturn(response);
+
+    // when // then
+    mockMvc.perform(
+            get("/api/v1/member/" + memberId + "/attendance/" + yearMonth)
+        )
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.details[0].date").value("2024-05-01"))
+        .andExpect(jsonPath("$.details[0].workingMinutes").value(10))
+        .andExpect(jsonPath("$.sum").value(30))
     ;
   }
 
