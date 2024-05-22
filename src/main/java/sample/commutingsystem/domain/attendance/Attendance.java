@@ -38,6 +38,13 @@ public class Attendance {
     this.endTime = endTime;
   }
 
+  public static Attendance create(Member member) {
+    return Attendance.builder()
+        .member(member)
+        .startTime(LocalDateTime.now())
+        .build();
+  }
+
   public void updateEndTime(LocalDateTime endTime) {
     this.endTime = endTime;
   }

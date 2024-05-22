@@ -1,7 +1,10 @@
 package sample.commutingsystem.api.service.member;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,12 +59,29 @@ public class MemberService {
     Member member = memberRepository.findById(memberId)
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 멤버입니다."));
 
-    Attendance attendance = Attendance.builder()
-        .member(member)
-        .startTime(LocalDateTime.now())
-        .build();
+    validationAttendance(memberId);
 
+    Attendance attendance = Attendance.create(member);
     attendanceRepository.save(attendance);
+  }
+
+  private void validationAttendance(Long memberId) {
+    Optional<Attendance> optionalAttendance
+        = attendanceRepository.findFirstByMemberIdOrderByStartTimeDesc(memberId);
+    if (optionalAttendance.isEmpty()) {
+      return;
+    }
+
+    Attendance lastAttendance = optionalAttendance.get();
+
+    if (lastAttendance.getStartTime().toLocalDate().equals(LocalDate.now())) {
+      if (lastAttendance.getEndTime() != null &&
+          lastAttendance.getEndTime().toLocalDate().equals(LocalDate.now())) {
+        throw new IllegalArgumentException("하루에 여러 번 출근하고 퇴근하는 것을 허용하지 않습니다.");
+      }
+      throw new IllegalArgumentException("이미 출근한 기록이 있습니다.");
+    }
+
   }
 
   @Transactional
