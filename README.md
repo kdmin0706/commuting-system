@@ -34,7 +34,7 @@
     {
       "name" : "직원 이름",
       "teamName" : "소속팀 이름",
-      "role" : "MANAGER" OR "MEMBER", //매니저인지 직원인지?
+      "role" : "MANAGER or MEMBER", //매니저인지 직원인지?
       "birthday" : "1900-01-01",
       "workStartDate" : "2024-01-01"
     }
@@ -60,19 +60,35 @@
     "detail": [
       {
         "date": "2024-01-01",
-        "workingMinutes": 480
+        "workingMinutes": 480,
+        "usingDayOff": false  //연차를 사용하지 않으면 false
       },
       {
         "date": "2024-01-02",
-        "workingMinutes": 490
+        "workingMinutes": 0,
+        "usingDayOff": false  //연차를 사용하면 true
       }
       // 2024.01.31일까지 존재할 수 있다.
     ],
     "sum": 10560
   }
   ```
+  
+### 연차 관리
+- 연차 신청
+  - 직원은 연차를 신청할 수 있다.
+  - 연차는 무조건 하루 단위로만 사용이 가능하다.
+  - 올해 입사한 직원은 11개의 연차, 그 외의 직원은 15개의 연차를 사용할 수 있다.
+  - 연차를 사용하기 위해서는 연차 사용일을 기준으로 며칠 전에 `연차 등록`을 해야한다.
+    - 연차를 등록하기만 하면, 매니저의 허가 없이 연차가 바로 적용된다.
+    - 단, 팀마다 연차 등록 기간은 다르게 적용된다. (ex. A팀은 하루 전에 등록하면 연차 사용 가능, B팀은 7일전에 등록해야 사용 가능)
+- 연차 조회
+  - 직원의 `id`를 이용하여 올해 사용하지 않고 남은 연차를 확인할 수 있습니다.
+
+
+
+
+
 
 ## Reference
 [인프런 워밍업 클럽 - 스터디 1기](https://www.inflearn.com/course/inflearn-warmup-club-study-1)
-
-[자바와 스프링 부트로 생애 최초 서버 만들기, 누구나 쉽게 개발부터 배포까지! [서버 개발 올인원 패키지]](https://www.inflearn.com/course/%EC%9E%90%EB%B0%94-%EC%8A%A4%ED%94%84%EB%A7%81%EB%B6%80%ED%8A%B8-%EC%84%9C%EB%B2%84%EA%B0%9C%EB%B0%9C-%EC%98%AC%EC%9D%B8%EC%9B%90)
