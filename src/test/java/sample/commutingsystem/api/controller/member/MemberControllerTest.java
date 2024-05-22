@@ -1,11 +1,13 @@
 package sample.commutingsystem.api.controller.member;
 
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static sample.commutingsystem.domain.member.MemberRole.MEMBER;
@@ -204,4 +206,25 @@ class MemberControllerTest {
         .andExpect(status().isOk())
     ;
   }
+
+  @Test
+  @DisplayName("등록된 직원은 잔여 연차를 조회할 수 있다.")
+  void getRemainingAnnualLeaves() throws Exception {
+    // given
+    long memberId = 1L;
+    int expectedRemainingLeaves = 10;
+    when(memberService.getRemainingAnnualLeaves(anyLong()))
+        .thenReturn(expectedRemainingLeaves);
+
+    // when // then
+    mockMvc.perform(
+            get("/api/v1/member/AnnualLeaves/count") // URL 수정
+                .param("memberId", Long.toString(memberId))
+        )
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(content().string(String.valueOf(expectedRemainingLeaves))); // 응답 바디의 내용 검증
+  }
+
+
 }
