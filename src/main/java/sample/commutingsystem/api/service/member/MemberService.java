@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +17,8 @@ import sample.commutingsystem.api.controller.member.request.MemberCreateRequest;
 import sample.commutingsystem.api.service.attendance.response.AttendanceDetail;
 import sample.commutingsystem.api.service.attendance.response.MemberAttendanceResponse;
 import sample.commutingsystem.api.service.member.response.MemberResponse;
+import sample.commutingsystem.domain.AnnualLeave.AnnualLeave;
+import sample.commutingsystem.domain.AnnualLeave.AnnualLeaveRepository;
 import sample.commutingsystem.domain.attendance.Attendance;
 import sample.commutingsystem.domain.attendance.AttendanceRepository;
 import sample.commutingsystem.domain.member.Member;
@@ -31,6 +34,7 @@ public class MemberService {
   private final MemberRepository memberRepository;
   private final TeamRepository teamRepository;
   private final AttendanceRepository attendanceRepository;
+  private final AnnualLeaveRepository annualLeaveRepository;
 
   @Transactional
   public void createMember(MemberCreateRequest request) {
@@ -62,14 +66,14 @@ public class MemberService {
 
   @Transactional
   public void startWorking(Long memberId) {
-    Member member = memberRepository.findById(memberId)
-        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 멤버입니다."));
+    Member member = findMemberBy(memberId);
 
     validationAttendance(memberId);
 
     Attendance attendance = Attendance.create(member);
     attendanceRepository.save(attendance);
   }
+
 
   private void validationAttendance(Long memberId) {
     Optional<Attendance> optionalAttendance
@@ -115,7 +119,42 @@ public class MemberService {
 
   }
 
-  private static List<AttendanceDetail> getAttendanceDetailsBy(LocalDate startOfMonth,
+  @Transactional
+  public void requestAnnualLeave(Long memberId, LocalDate date) {
+    Member member = findMemberBy(memberId);
+    Team team = member.getTeam();
+
+    //팀별로 연차 등록 기간 체크
+    LocalDate today = LocalDate.now();
+    long daysUntilLeave = ChronoUnit.DAYS.between(today, date);
+    if (daysUntilLeave < team.getAnnualLeaveRegisterPeriod()) {
+      throw new IllegalArgumentException("연차 등록 기간이 아닙니다.");
+    }
+
+    //올해 사용한 연차 갯수
+    LocalDate startOfYear = LocalDate.of(LocalDate.now().getYear(), 1, 1);
+    List<AnnualLeave> annualLeaves = annualLeaveRepository.findAllByMemberId(memberId);
+    long usedCount = annualLeaves.stream()
+        .filter(l -> l.getAnnualDate().isAfter(startOfYear))
+        .count();
+
+    //잔여 연차 개수
+    int initLeaves = member.getWorkStartDate().getYear() == today.getYear() ? 11 : 15;
+    if (usedCount - initLeaves == 0) {
+      throw new IllegalArgumentException("잔여 연차가 없습니다.");
+    }
+
+    AnnualLeave annualLeave = AnnualLeave.create(member, date);
+    annualLeaveRepository.save(annualLeave);
+  }
+
+
+  private Member findMemberBy(Long memberId) {
+    return memberRepository.findById(memberId)
+        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 멤버입니다."));
+  }
+
+  private List<AttendanceDetail> getAttendanceDetailsBy(LocalDate startOfMonth,
       LocalDate endOfMonth, Map<LocalDate, Integer> attendanceMap) {
     List<AttendanceDetail> details = new ArrayList<>();
     for (LocalDate date = startOfMonth; !date.isAfter(endOfMonth); date = date.plusDays(1)) {

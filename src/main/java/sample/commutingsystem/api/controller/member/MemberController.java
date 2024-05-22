@@ -1,6 +1,7 @@
 package sample.commutingsystem.api.controller.member;
 
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,11 @@ public class MemberController {
   public MemberAttendanceResponse getMemberAttendance(
       @PathVariable Long memberId, @PathVariable YearMonth yearMonth) {
     return memberService.getMemberAttendance(memberId, yearMonth);
+  }
+
+  @GetMapping("/api/v1/member/AnnualLeaves")
+  public void requestAnnualLeave(@RequestParam Long memberId, @RequestParam LocalDate date) {
+    memberService.requestAnnualLeave(memberId, date);
   }
 
 }

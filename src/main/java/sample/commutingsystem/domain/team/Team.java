@@ -27,11 +27,14 @@ public class Team {
 
   private int memberCount;
 
+  private int AnnualLeaveRegisterPeriod;
+
   @Builder
-  public Team(String name, String manager, int memberCount) {
+  public Team(String name, String manager, int memberCount, int annualLeaveRegisterPeriod) {
     this.name = name;
     this.manager = manager;
     this.memberCount = memberCount;
+    this.AnnualLeaveRegisterPeriod = annualLeaveRegisterPeriod;
   }
 
   public boolean hasManager() {
