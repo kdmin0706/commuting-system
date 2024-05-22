@@ -166,7 +166,7 @@ class MemberControllerTest {
     MemberAttendanceResponse response = MemberAttendanceResponse.builder()
         .details(List.of(
                 AttendanceDetail.create("2024-05-01", 10),
-                AttendanceDetail.create("2024-05-02", 10),
+                AttendanceDetail.create("2024-05-02", 0),
                 AttendanceDetail.create("2024-05-03", 10)
             )
         )
@@ -182,9 +182,15 @@ class MemberControllerTest {
         )
         .andDo(print())
         .andExpect(status().isOk())
+        .andExpect(jsonPath("$.sum").value(30))
+
         .andExpect(jsonPath("$.details[0].date").value("2024-05-01"))
         .andExpect(jsonPath("$.details[0].workingMinutes").value(10))
-        .andExpect(jsonPath("$.sum").value(30))
+        .andExpect(jsonPath("$.details[0].usingDayOff").value(false))
+
+        .andExpect(jsonPath("$.details[1].date").value("2024-05-02"))
+        .andExpect(jsonPath("$.details[1].workingMinutes").value(0))
+        .andExpect(jsonPath("$.details[1].usingDayOff").value(true))
     ;
   }
 
