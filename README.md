@@ -66,7 +66,7 @@
       {
         "date": "2024-01-02",
         "workingMinutes": 0,
-        "usingDayOff": false  //연차를 사용하면 true
+        "usingDayOff": true  //연차를 사용하면 true
       }
       // 2024.01.31일까지 존재할 수 있다.
     ],
