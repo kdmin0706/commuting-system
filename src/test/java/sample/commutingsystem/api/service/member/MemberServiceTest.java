@@ -147,12 +147,19 @@ class MemberServiceTest {
     Member member = createMember("member1", null);
     memberRepository.save(member);
 
+    LocalDateTime minusDays = LocalDateTime.now().minusDays(1);
+    Attendance attendance = Attendance.builder()
+        .member(member)
+        .startTime(minusDays)
+        .build();
+    attendanceRepository.save(attendance);
+
     // when
     memberService.startWorking(member.getId());
 
     // then
     List<Attendance> attendances = attendanceRepository.findAll();
-    assertThat(attendances).hasSize(1);
+    assertThat(attendances).hasSize(2);
   }
 
   @Test
@@ -168,16 +175,55 @@ class MemberServiceTest {
   }
 
   @Test
+  @DisplayName("출근한 직원은 또 다시 출근할 수 없다.")
+  void startWorkingWhenIsAlreadyAttendance() {
+    // given
+    Member member = createMember("member1", null);
+    memberRepository.save(member);
+
+    LocalDateTime now = LocalDateTime.now();
+    Attendance attendance = Attendance.builder()
+        .member(member)
+        .startTime(now)
+        .build();
+    attendanceRepository.save(attendance);
+
+    // when // then
+    assertThatThrownBy(() -> memberService.startWorking(member.getId()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("이미 출근한 기록이 있습니다.");
+  }
+
+  @Test
+  @DisplayName("하루에 여러 번 출근하고 퇴근하는 것을 허용하지 않습니다.")
+  void startWorkingWhenIsAlreadyHome() {
+    // given
+    Member member = createMember("member1", null);
+    memberRepository.save(member);
+
+    LocalDateTime now = LocalDateTime.now();
+    Attendance attendance = Attendance.builder()
+        .member(member)
+        .startTime(LocalDateTime.of(now.getYear(), now.getMonth(), now.getDayOfMonth(), 9, 0))
+        .endTime(LocalDateTime.of(now.getYear(), now.getMonth(), now.getDayOfMonth(),  18, 0))
+        .build();
+    attendanceRepository.save(attendance);
+
+    // when // then
+    assertThatThrownBy(() -> memberService.startWorking(member.getId()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("하루에 여러 번 출근하고 퇴근하는 것을 허용하지 않습니다.");
+  }
+
+
+  @Test
   @DisplayName("출근한 직원은 퇴근을 할 수 있다.")
   void endWorking() {
     // given
     Member member = createMember("member1", null);
     memberRepository.save(member);
 
-    Attendance attendance = Attendance.builder()
-        .member(member)
-        .startTime(LocalDateTime.of(2024, 1, 1, 0, 0))
-        .build();
+    Attendance attendance = Attendance.create(member);
     attendanceRepository.save(attendance);
 
     // when
