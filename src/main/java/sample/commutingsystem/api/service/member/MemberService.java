@@ -148,6 +148,25 @@ public class MemberService {
     annualLeaveRepository.save(annualLeave);
   }
 
+  public int getRemainingAnnualLeaves(Long memberId) {
+    //올해 사용한 연차 갯수
+    Member member = findMemberBy(memberId);
+
+    LocalDate startOfYear = LocalDate.of(LocalDate.now().getYear(), 1, 1);
+    List<AnnualLeave> annualLeaves = annualLeaveRepository.findAllByMemberId(memberId);
+    long usedCount = annualLeaves.stream()
+        .filter(l -> l.getAnnualDate().isAfter(startOfYear))
+        .count();
+
+    //잔여 연차 개수
+    int initLeaves = member.getWorkStartDate().getYear() == LocalDate.now().getYear() ? 11 : 15;
+    if (usedCount - initLeaves == 0) {
+      throw new IllegalArgumentException("잔여 연차가 없습니다.");
+    }
+
+    return (int) (usedCount - initLeaves);
+  }
+
 
   private Member findMemberBy(Long memberId) {
     return memberRepository.findById(memberId)

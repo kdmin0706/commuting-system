@@ -53,4 +53,8 @@ public class MemberController {
     memberService.requestAnnualLeave(memberId, date);
   }
 
+  @GetMapping("/api/v1/member/AnnualLeaves/count")
+  public int getRemainingAnnualLeaves(@RequestParam Long memberId) {
+    return memberService.getRemainingAnnualLeaves(memberId);
+  }
 }
